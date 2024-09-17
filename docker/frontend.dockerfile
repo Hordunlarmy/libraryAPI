@@ -7,4 +7,5 @@ COPY src/frontend_api/ .
 
 EXPOSE 8001
 
-CMD ["poetry", "run", "gunicorn", "-w", "4", "-b", "0.0.0.0:8001", "main:app"]
+# CMD ["poetry", "run", "gunicorn", "-w", "4", "-b", "0.0.0.0:8001", "main:app"]
+CMD ["poetry", "run", "python3", "main.py"]
