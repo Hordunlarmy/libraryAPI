@@ -20,12 +20,14 @@ services:
       - ./src/frontend_api:/workspace/library/frontend_api
     depends_on:
       - base_image
+      - mongodb
+      - rabbitmq
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/"]
       interval: 30s
       retries: 3
-      start_period: 10s
+      start_period: 30s
       timeout: 10s
 
   backend:
@@ -42,12 +44,14 @@ services:
       - ./src/backend_api:/workspace/library/backend_api
     depends_on:
       - base_image
+      - mariadb
+      - rabbitmq
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/"]
       interval: 30s
       retries: 3
-      start_period: 10s
+      start_period: 30s
       timeout: 10s
 
   mariadb:
@@ -87,10 +91,26 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
-      start_period: 20s 
+      start_period: 30s 
 
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file:
+      - ./docker/broker.env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+      start_period: 30s
 
 volumes:
   mariadb_data:
   mongodb_data:
-
+  rabbitmq_data:

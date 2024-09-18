@@ -1,7 +1,7 @@
+from bson import ObjectId
 from pydantic import BaseModel, validator
 from shared.database import db as frontend_db
 from shared.logger import logging
-from bson import ObjectId
 
 
 class CustomError(Exception):

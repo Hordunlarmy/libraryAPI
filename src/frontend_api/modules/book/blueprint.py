@@ -1,8 +1,8 @@
 from flask import Blueprint, request
 from modules.book.manager import BookManager
-from shared.logger import logging  # noqa
-from shared.error_handler import error_handler
 from modules.book.schemas import BorrowedBookSchema, ReturnedBookSchema
+from shared.error_handler import error_handler
+from shared.logger import logging  # noqa
 
 book_manager = BookManager()
 book_blueprint = Blueprint("book", __name__)

@@ -1,8 +1,8 @@
-from shared.database import db as frontend_db
 from flask import jsonify
-from shared.logger import logging
-from pymongo.errors import DuplicateKeyError
 from modules.user.schemas import UserSchema
+from pymongo.errors import DuplicateKeyError
+from shared.database import db as frontend_db
+from shared.logger import logging
 
 
 class UserManager:

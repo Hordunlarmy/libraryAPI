@@ -4,15 +4,8 @@
 CREATE DATABASE IF NOT EXISTS backend_db;
 USE backend_db;
 
-CREATE TABLE IF NOT EXISTS Admins (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE IF NOT EXISTS Users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     email VARCHAR(255) UNIQUE NOT NULL,
     first_name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
@@ -20,7 +13,7 @@ CREATE TABLE IF NOT EXISTS Users (
 );
 
 CREATE TABLE IF NOT EXISTS Books (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     publisher VARCHAR(255),
@@ -30,16 +23,15 @@ CREATE TABLE IF NOT EXISTS Books (
 );
 
 CREATE TABLE IF NOT EXISTS BorrowedBooks (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    book_id INT NOT NULL,
+    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id CHAR(36) NOT NULL,
+    book_id CHAR(36) NOT NULL,
     borrow_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     return_date TIMESTAMP NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
     FOREIGN KEY (book_id) REFERENCES Books(id) ON DELETE CASCADE
 );
 
--- Indices to improve query performance
 CREATE INDEX idx_books_title ON Books(title);
 CREATE INDEX idx_books_author ON Books(author);
 CREATE INDEX idx_books_publisher ON Books(publisher);

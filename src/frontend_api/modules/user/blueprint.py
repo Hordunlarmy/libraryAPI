@@ -1,8 +1,8 @@
 from flask import Blueprint
 from modules.user.manager import UserManager
-from shared.logger import logging  # noqa
 from modules.user.schemas import UserSchema
 from shared.error_handler import error_handler
+from shared.logger import logging  # noqa
 
 user_manager = UserManager()
 user_blueprint = Blueprint("user", __name__)
