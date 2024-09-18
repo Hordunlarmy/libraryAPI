@@ -3,7 +3,7 @@ from decouple import config as ENV
 from fabric import Connection
 
 # Configuration
-REMOTE_DIR = "/home/ubuntu/"
+REMOTE_DIR = "/home/azureuser/"
 GIT_URL = ENV("GIT_URL")
 ACCESS_TOKEN = ENV("ACCESS_TOKEN")  # GitHub Access Token
 GIT_DIR = REMOTE_DIR + GIT_URL.split("/")[-1].split(".")[0]
@@ -64,6 +64,7 @@ def clone_repo(conn):
         conn.run(f"git clone {token_url}")
 
     conn.run(f"git config --global --add safe.directory ${GIT_DIR}")
+    conn.run(f"sudo chown -R $(whoami) {GIT_DIR}")
     with conn.cd(GIT_DIR):
         conn.run("git fetch origin && git reset --hard origin/main")
     print("--------------Repository cloned & Up-To-Date---------------")
