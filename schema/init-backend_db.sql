@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS Books (
     publisher VARCHAR(255),
     category VARCHAR(255),
     is_borrowed BOOLEAN DEFAULT FALSE,
-    return_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
