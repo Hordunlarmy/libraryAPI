@@ -1,0 +1,52 @@
+name: Deploy to Cloud
+
+on:
+  workflow_run:
+    workflows: [Backend Lint And Test, Frontend Lint And Test]
+    types:
+      - completed
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Cloud
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    environment: production
+
+    env:
+      REMOTE_USER: ${{ secrets.REMOTE_USER }}
+      REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      GIT_URL: ${{ secrets.GIT_URL }}
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Fabric
+        run: |
+          python -m pip install --upgrade pip
+          pip install fabric fabric2
+          pip install python-decouple
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Run Fabric script to deploy to Cloud
+        run: |
+          python3 fabfile.py
+
+  deploy-failed:
+    name: Deployment Failure
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - run: echo 'Lints and Tests Failed'
+      - run: exit 1
+

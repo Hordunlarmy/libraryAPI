@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-import subprocess
 from decouple import config as ENV
 from fabric import Connection
 
-"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
-"""""" """""" """""" """"" CONFIGURATIONS """ """""" """""" """""" """"""
-"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
-
+# Configuration
 REMOTE_DIR = "/home/ubuntu/"
-GIT_URL = ENV("GIT_URL")  # HTTPS URL for repository
+GIT_URL = ENV("GIT_URL")
 ACCESS_TOKEN = ENV("ACCESS_TOKEN")  # GitHub Access Token
 GIT_DIR = REMOTE_DIR + GIT_URL.split("/")[-1].split(".")[0]
 REMOTE_USER = ENV("REMOTE_USER")
 REMOTE_HOST = ENV("REMOTE_HOST")
-DOT_ENV = ENV("DOT_ENV")
-CONFIG = ENV("CONFIG")
-LOAD_BALANCER_DNS = ENV("LOAD_BALANCER_DNS")
-
-"""""" """""" """""" """""" """""" """""" """""" """""" """""" """""" """"""
 
 
 def install_docker(conn):
@@ -33,11 +24,13 @@ def install_docker(conn):
 
     conn.run(f"{UPDATE}")
     conn.run(
-        f"{INSTALL} apt-transport-https ca-certificates curl software-properties-common"
+        f"{INSTALL} apt-transport-https ca-certificates curl "
+        f"software-properties-common"
     )
 
     conn.run(
-        "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -"
+        "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | "
+        "sudo apt-key add -"
     )
     conn.run(
         'sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"'
@@ -56,12 +49,9 @@ def install_docker(conn):
 
 
 def clone_repo(conn):
-    """Clone the repository using GitHub Access Token and start the application"""
-
-    promptpass = Responder(
-        pattern=r"Are you sure you want to continue connecting \(yes/no/\[fingerprint\]\)\?",
-        response="yes\n",
-    )
+    """
+    Clone the repository using GitHub Access Token and start the application
+    """
 
     result = conn.run(
         f'test -d {GIT_DIR} && echo "exists" || echo "not exists"', hide=True
@@ -71,16 +61,13 @@ def clone_repo(conn):
         print("--------------Cloning the repository---------------")
         # Clone using access token in the URL
         token_url = GIT_URL.replace("https://", f"https://{ACCESS_TOKEN}@")
-        conn.run(f"git clone {token_url}", pty=True, watchers=[promptpass])
+        conn.run(f"git clone {token_url}")
 
     conn.run(f"git config --global --add safe.directory ${GIT_DIR}")
     conn.run(f"sudo chown -R $(whoami) {GIT_DIR}")
     with conn.cd(GIT_DIR):
         conn.run("git fetch origin && git reset --hard origin/main")
     print("--------------Repository cloned & Up-To-Date---------------")
-
-    conn.run(f'echo "{DOT_ENV}" > {GIT_DIR}.env')
-    print("--------------.env file created---------------")
 
 
 def deploy(conn):
@@ -92,10 +79,10 @@ def deploy(conn):
     print("--------------Application deployed---------------")
 
 
-def handle_connection(host):
+def handle_connection(host, user):
     """Handle connection and execute all tasks"""
 
-    conn = Connection(host=host, user=REMOTE_USER)
+    conn = Connection(host=host, user=user)
     result = conn.run("hostname", hide=True)
     print(
         f"== == == == == == == == == == == == == == == == == == == ==\n"
@@ -109,4 +96,8 @@ def handle_connection(host):
 
 
 if __name__ == "__main__":
-    handle_connection(REMOTE_HOST)
+    try:
+        handle_connection(REMOTE_HOST, REMOTE_USER)
+    except Exception as e:
+        print(f"Deployment failed: {e}")
+        exit(1)

@@ -1,0 +1,56 @@
+name: Frontend Lint And Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  runtests_linting_and_check_irregular_imports:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.virtualenvs
+          key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies with Poetry
+        run: |
+          poetry install
+
+      - name: Check irregular imports
+        run: |
+          poetry run flake8 --max-line-length 100 --ignore=E501 src/frontend_api
+
+      - name: Sorting imports in regular order
+        run: |
+          poetry run isort src/frontend_api
+
+      - name: Lint folder
+        run: |
+          poetry run autopep8 --in-place --aggressive --recursive src/frontend_api
+
+      - name: Checks written tests
+        run: |
+          cd src/frontend_api
+          poetry run pytest
+
