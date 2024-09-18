@@ -2,7 +2,7 @@ name: Deploy to Cloud
 
 on:
   workflow_run:
-    workflows: [Backend Lint And Test, Frontend Lint And Test]
+    workflows: [Backend Lint And Test]
     types:
       - completed
 
