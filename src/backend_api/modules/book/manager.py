@@ -1,12 +1,13 @@
-from shared.database import Database, db
-from modules.book.schemas import BookCreateSchema, UnavailableBook
-from shared.broker import SyncManager
-from fastapi import HTTPException
-from shared.logger import logging
-from decouple import config
-from shared.utils import generate_uuid
 import json
 from datetime import datetime
+
+from decouple import config
+from fastapi import HTTPException
+from modules.book.schemas import BookCreateSchema, UnavailableBook
+from shared.broker import SyncManager
+from shared.database import Database, db
+from shared.logger import logging
+from shared.utils import generate_uuid
 
 broker = SyncManager()
 

@@ -1,11 +1,12 @@
+import json
+from datetime import datetime, timedelta
+
+from decouple import config
 from flask import jsonify
 from shared.broker import SyncManager
 from shared.database import db as frontend_db
 from shared.logger import logging
 from shared.utils import generate_uuid
-from decouple import config
-import json
-from datetime import datetime, timedelta
 
 broker = SyncManager()
 

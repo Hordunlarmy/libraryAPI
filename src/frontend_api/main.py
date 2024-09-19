@@ -27,6 +27,7 @@ def start_consumer():
     """
 
     import threading
+
     from shared.broker import SyncManager
     from shared.utils import callback
 

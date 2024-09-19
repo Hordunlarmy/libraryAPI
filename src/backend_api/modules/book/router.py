@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from modules.book.manager import BookManager
 from modules.book.schemas import BookCreateSchema
 
-
 book_router = APIRouter(prefix="/api/books")
 book_manager = BookManager()
 

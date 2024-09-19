@@ -1,8 +1,8 @@
-import pika
-from shared.logger import logging
-from decouple import config
 from time import sleep
 
+import pika
+from decouple import config
+from shared.logger import logging
 
 # Configuration
 BROKER_HOST = config("BROKER_HOST", default="localhost")

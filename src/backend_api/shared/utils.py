@@ -1,6 +1,7 @@
-from shared.logger import logging
-import uuid
 import json
+import uuid
+
+from shared.logger import logging
 
 
 def callback(ch, method, properties, body):
@@ -8,8 +9,8 @@ def callback(ch, method, properties, body):
     Callback function to handle incoming messages from the RabbitMQ broker.
     """
 
-    from modules.user.manager import UserManager
     from modules.book.manager import BookManager
+    from modules.user.manager import UserManager
 
     body = json.loads(body.decode("utf-8"))
 

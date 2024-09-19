@@ -1,6 +1,7 @@
-from shared.logger import logging
-import uuid
 import json
+import uuid
+
+from shared.logger import logging
 
 
 def callback(ch, method, properties, body):

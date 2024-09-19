@@ -1,8 +1,7 @@
-from shared.database import Database, db
-from modules.user.schemas import UserSchema, User, Book
+from modules.user.schemas import Book, User, UserSchema
 from shared.broker import SyncManager
+from shared.database import Database, db
 from shared.logger import logging
-
 
 broker = SyncManager()
 
@@ -84,7 +83,6 @@ class UserManager:
 
         users_books_data = self.db.select(query)
 
-        # Process the data
         users_dict = {}
         for record in users_books_data:
             user_id = record["user_id"]
@@ -96,20 +94,17 @@ class UserManager:
                 category=record["category"],
             )
 
-            # If the user is not already in the result dictionary, add them
             if user_id not in users_dict:
                 users_dict[user_id] = User(
                     user_id=user_id,
                     email=record["email"],
                     first_name=record["first_name"],
                     last_name=record["last_name"],
-                    books=[book_info],  # Initialize with the current book
+                    books=[book_info],
                 )
             else:
-                # Append the book info to the existing user's list of books
                 users_dict[user_id].books.append(book_info)
 
-        # Create a UsersBooksResponse object to return
         response = [
             User(**user_data.dict()) for user_data in users_dict.values()
         ]

@@ -1,13 +1,13 @@
+import threading
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from modules.book.router import book_router
 from modules.user.router import user_router
-import threading
-from shared.logger import logging
-from starlette.middleware.base import BaseHTTPMiddleware
 from shared.broker import SyncManager
+from shared.logger import logging
 from shared.utils import callback
-
+from starlette.middleware.base import BaseHTTPMiddleware
 
 app = FastAPI()
 
