@@ -25,18 +25,23 @@ class RabbitMQMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
         self.consumer_started = False
+        self.sync_manager = SyncManager()
 
     async def dispatch(self, request, call_next):
-        if not self.consumer_started:
-            logging.info("Starting RabbitMQ consumer...")
+        if not self.consumer_started or not self.sync_manager.is_connected():
+            if not self.sync_manager.is_connected():
+                logging.warning("RabbitMQ connection lost, reconnecting...")
+                self.sync_manager.reconnect()
+
+            logging.info("Starting or restarting RabbitMQ consumer...")
             consumer_thread = threading.Thread(
-                target=SyncManager().consume, args=(callback,)
+                target=self.sync_manager.consume, args=(callback,)
             )
             consumer_thread.start()
             self.consumer_started = True
             logging.info("RabbitMQ consumer started")
         else:
-            logging.info("RabbitMQ consumer already running")
+            logging.info("RabbitMQ consumer is already running")
 
         response = await call_next(request)
         return response

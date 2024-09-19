@@ -117,10 +117,25 @@ class BookManager:
             borrow_data_json = json.dumps(borrow_data)
             broker.publish(borrow_data_json, self.pub_queue)
         except Exception as e:
-            logging.error(f"Error borrowing book: {e}")
-            return jsonify({"error": "Error borrowing book"}), 500
+            logging.error(f"Error publishing borrow data to RabbitMQ: {e}")
 
-        return jsonify({"message": "Book borrowed successfully"}), 200
+            # Rollback database operation if message publishing fails
+            try:
+                self.db.Books.update_one(
+                    {"_id": borrow_data.get("book_id")},
+                    {"$set": {"is_borrowed": False}},
+                )
+                self.db.BorrowedBooks.delete_one({"_id": borrow_data["_id"]})
+                logging.info("Rollback completed successfully.")
+                raise Exception("Broker connection error. Try again.")
+            except Exception as rollback_error:
+                logging.error(f"Error during rollback: {rollback_error}")
+                return (jsonify({"error": "Rollback failed"}), 500)
+            return (jsonify({"error": "Database rollback performed."}), 500)
+        return (
+            jsonify({"message": "Book borrowed and published successfully"}),
+            200,
+        )
 
     def return_book(self, data):
         """
@@ -145,8 +160,17 @@ class BookManager:
             broker.publish(return_data_json, self.pub_queue)
         except Exception as e:
             logging.error(f"Error returning book: {e}")
-            return jsonify({"error": "Error returning book"}), 500
-
+            try:
+                self.db.Books.update_one(
+                    {"_id": book_id}, {"$set": {"is_borrowed": True}}
+                )
+                self.db.BorrowedBooks.insert_one(return_data)
+                logging.info("Rollback completed successfully.")
+                raise Exception("Broker connection error. Try again.")
+            except Exception as rollback_error:
+                logging.error(f"Error during rollback: {rollback_error}")
+                return (jsonify({"error": "Rollback failed"}), 500)
+            return (jsonify({"error": "Database rollback performed."}), 500)
         return jsonify({"message": "Book returned successfully"}), 200
 
     def filter_books(self, publishers=None, categories=None):

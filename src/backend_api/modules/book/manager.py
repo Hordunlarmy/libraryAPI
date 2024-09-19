@@ -55,9 +55,23 @@ class BookManager:
             broker.publish(message, self.pub_queue)
         except Exception as e:
             logging.error(f"Error publishing book data: {e}")
-            raise HTTPException(
-                status_code=500, detail="Error publishing book data"
-            )
+            try:
+                rollback_query = """
+                DELETE FROM Books
+                WHERE id = %s
+                """
+                rollback_params = (book_id,)
+                self.db.commit(rollback_query, rollback_params)
+                logging.info("Rolled back book insertion successfully.")
+                raise HTTPException(
+                    status_code=500,
+                    detail="Broker connection error. Try again",
+                )
+            except Exception as rollback_error:
+                logging.error(f"Error during rollback: {rollback_error}")
+                raise HTTPException(status_code=500, detail="Rollback failed")
+
+            raise HTTPException(status_code=500, detail="Rollback performed")
 
         return {"book_id": book_id}
 
@@ -85,9 +99,24 @@ class BookManager:
             broker.publish(book_data, self.pub_queue)
         except Exception as e:
             logging.error(f"Error publishing book data: {e}")
-            raise HTTPException(
-                status_code=500, detail="Error publishing book data"
-            )
+
+            try:
+                rollback_query = """
+                INSERT INTO Books (id)
+                VALUES (%s)
+                """
+                rollback_params = (book_id,)
+                self.db.commit(rollback_query, rollback_params)
+                logging.info("Rolled back book removal successfully.")
+                raise HTTPException(
+                    status_code=500,
+                    detail="Broker connection error. Try again",
+                )
+            except Exception as rollback_error:
+                logging.error(f"Error during rollback: {rollback_error}")
+                raise HTTPException(status_code=500, detail="Rollback failed")
+
+            raise HTTPException(status_code=500, detail="Rollback performed")
 
         return {"message": "Book removed successfully"}
 

@@ -64,11 +64,12 @@ class UserManager:
 
         except Exception as e:
             logging.error(f"Error publishing user data to broker: {e}")
-            return (
-                jsonify(
-                    {"error": "User enrolled, but failed to publish data"}
-                ),
-                500,
-            )
-
+            try:
+                self.db.Users.delete_one({"_id": user_id})
+                logging.info(f"Rolled back user {user_id} from database.")
+                raise Exception("Broker connection error. Try again")
+            except Exception as rollback_error:
+                logging.error(f"Error during rollback: {rollback_error}")
+                return (jsonify({"error": "Rollback failed"}), 500)
+            return (jsonify({"error": "Rollback performed"}), 500)
         return jsonify({"user_id": str(user_id)}), 201

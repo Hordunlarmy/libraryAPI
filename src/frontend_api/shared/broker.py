@@ -72,6 +72,20 @@ class SyncManager:
             except Exception as e:
                 logging.error(f"Failed to disconnect from RabbitMQ: {e}")
 
+    def is_connected(self):
+        """
+        Check if the connection is still open.
+        """
+        return self.connection and self.connection.is_open
+
+    def reconnect(self):
+        """
+        Reconnect to RabbitMQ if the connection is closed.
+        """
+        if not self.is_connected():
+            logging.info("Reconnecting to RabbitMQ...")
+            self.connect()
+
     def publish(self, message, queue=BROKER_PUB_QUEUE):
         """
         Publish a message to the specified RabbitMQ queue with retry logic.

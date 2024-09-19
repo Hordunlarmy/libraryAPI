@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from modules.user.schemas import Book, User, UserSchema
 from shared.broker import SyncManager
 from shared.database import Database, db
@@ -51,6 +52,8 @@ class UserManager:
         params = (user_id,)
 
         user_data = self.db.select(query, params)
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found")
 
         return user_data
 
