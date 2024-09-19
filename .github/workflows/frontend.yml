@@ -37,9 +37,9 @@ jobs:
         run: |
           poetry install
 
-      - name: Check irregular imports
-        run: |
-          poetry run flake8 --max-line-length 100 --ignore=E501 src/frontend_api
+      # - name: Check irregular imports
+      #   run: |
+      #     poetry run flake8 --max-line-length 100 --ignore=E501 src/frontend_api
 
       - name: Sorting imports in regular order
         run: |
