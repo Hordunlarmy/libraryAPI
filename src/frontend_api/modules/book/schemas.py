@@ -1,4 +1,3 @@
-from bson import ObjectId
 from pydantic import BaseModel, validator
 from shared.database import db as frontend_db
 from shared.logger import logging
@@ -23,13 +22,10 @@ class BorrowedBookSchema(BaseModel):
     book_id: str
     days: int
 
-    @validator("user_id")
     def validate_user_id(cls, user_id):
         """
         Validate user_id
         """
-
-        user_id = ObjectId(user_id)
 
         if not frontend_db.Users.find_one({"_id": user_id}):
             logging.error("User not found")
@@ -42,9 +38,6 @@ class BorrowedBookSchema(BaseModel):
         """
         Validate book_id
         """
-
-        logging.info(f"{book_id=} {type(book_id)}")
-        book_id = ObjectId(book_id)
 
         book = frontend_db.Books.find_one({"_id": book_id})
 
@@ -71,8 +64,6 @@ class ReturnedBookSchema(BaseModel):
         """
         Validate book_id
         """
-
-        book_id = ObjectId(book_id)
 
         book = frontend_db.Books.find_one({"_id": book_id})
 

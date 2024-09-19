@@ -1,6 +1,8 @@
 import pika
 from shared.logger import logging
 from decouple import config
+from time import sleep
+
 
 # Configuration
 BROKER_HOST = config("BROKER_HOST")
@@ -8,6 +10,8 @@ BROKER_PUB_QUEUE = config("BROKER_PUB_QUEUE")
 BROKER_SUB_QUEUE = config("BROKER_SUB_QUEUE")
 BROKER_USER = config("BROKER_USER")
 BROKER_PASS = config("BROKER_PASS")
+RETRY_ATTEMPTS = 5
+RETRY_DELAY = 2  # seconds
 
 
 class SyncManager:
@@ -70,22 +74,33 @@ class SyncManager:
 
     def publish(self, message, queue=BROKER_PUB_QUEUE):
         """
-        Publish a message to the specified RabbitMQ queue.
+        Publish a message to the specified RabbitMQ queue with retry logic.
         """
 
         if not self.connection or self.connection.is_closed:
             self.connect()
 
-        try:
-            self.channel.basic_publish(
-                exchange="",
-                routing_key=queue,
-                body=message,
-                properties=pika.BasicProperties(delivery_mode=2),
-            )
-            logging.info(f"Message published to queue {queue}: {message}")
-        except Exception as e:
-            logging.error(f"Failed to publish message to queue {queue}: {e}")
+        for attempt in range(RETRY_ATTEMPTS):
+            try:
+                self.channel.basic_publish(
+                    exchange="",
+                    routing_key=queue,
+                    body=message,
+                    properties=pika.BasicProperties(delivery_mode=2),
+                )
+                logging.info(f"NEW message published to {queue}")
+                break
+            except Exception as e:
+                logging.error(
+                    f"Failed to publish message to {queue} on attempt "
+                    f"{attempt + 1}: {e}"
+                )
+                if attempt < RETRY_ATTEMPTS - 1:
+                    sleep(RETRY_DELAY)
+                else:
+                    logging.error(
+                        f"All attempts to publish message to {queue} failed."
+                    )
 
     def consume(self, callback, queue=BROKER_SUB_QUEUE):
         """

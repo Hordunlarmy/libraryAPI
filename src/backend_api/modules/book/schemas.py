@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class BookCreateSchema(BaseModel):
@@ -9,4 +10,13 @@ class BookCreateSchema(BaseModel):
 
 
 class BookSchema(BookCreateSchema):
-    id: int
+    id: str
+
+
+class UnavailableBook(BaseModel):
+    id: str
+    title: str
+    author: str
+    publisher: str
+    category: str
+    available_on: datetime

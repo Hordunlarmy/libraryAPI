@@ -17,9 +17,18 @@ async def add_book(book_data: BookCreateSchema):
 
 
 @book_router.delete("/remove/{book_id}")
-async def remove_book(book_id: int):
+async def remove_book(book_id: str):
     """
     Remove a book from the database
     """
 
     return await book_manager.remove_book(book_id)
+
+
+@book_router.get("/unavailable")
+async def get_unavailable_books():
+    """
+    Get all unavailable books
+    """
+
+    return await book_manager.get_unavailable_books()

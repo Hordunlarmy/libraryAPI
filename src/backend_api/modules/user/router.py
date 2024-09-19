@@ -14,6 +14,15 @@ async def get_all_users():
     return await user_manager.get_all_users()
 
 
+@user_router.get("/books")
+async def get_users_and_books_borrowed():
+    """
+    Get users and books borrowed
+    """
+
+    return await user_manager.get_users_and_books_borrowed()
+
+
 @user_router.get("/{user_id}")
 async def get_user(user_id: str):
     """

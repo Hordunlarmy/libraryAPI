@@ -103,6 +103,9 @@ services:
       - ./docker/broker.env
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    depends_on:
+      - mariadb
+      - mongodb
     healthcheck:
       test: rabbitmq-diagnostics -q ping
       interval: 30s

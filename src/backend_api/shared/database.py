@@ -4,6 +4,14 @@ from decouple import config
 from mysql.connector import Error, connect
 
 
+class DatabaseError(Exception):
+    """Custom exception for database errors."""
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+
 class Database:
     def __init__(
         self,
@@ -45,8 +53,7 @@ class Database:
                 connection.commit()
                 return cursor.lastrowid
             except Error as e:
-                print(f"Commit error: {e}")
-                return False
+                raise DatabaseError(f"{e}")
 
     def select(self, query, params=None, format=True):
         with self._get_connection() as connection:
@@ -64,8 +71,7 @@ class Database:
                 else:
                     return (col_names, records)
             except Error as e:
-                print(f"Select error: {e}")
-                return False
+                raise DatabaseError(f"{e}")
 
 
 db = Database(
