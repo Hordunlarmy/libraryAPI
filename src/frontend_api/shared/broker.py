@@ -96,6 +96,9 @@ class SyncManager:
 
         for attempt in range(RETRY_ATTEMPTS):
             try:
+                if not self.connection or self.connection.is_closed:
+                    self.connect()
+
                 self.channel.basic_publish(
                     exchange="",
                     routing_key=queue,
@@ -110,11 +113,14 @@ class SyncManager:
                     f"{attempt + 1}: {e}"
                 )
                 if attempt < RETRY_ATTEMPTS - 1:
+                    logging.info("Reconnecting before retrying...")
+                    self.connect()
                     sleep(RETRY_DELAY)
                 else:
                     logging.error(
                         f"All attempts to publish message to {queue} failed."
                     )
+                    raise
 
     def consume(self, callback, queue=BROKER_SUB_QUEUE):
         """

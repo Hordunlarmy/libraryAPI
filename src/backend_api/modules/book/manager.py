@@ -75,10 +75,29 @@ class BookManager:
 
         return {"book_id": book_id}
 
-    async def remove_book(self, book_id: int):
+    async def remove_book(self, book_id: str):
         """
         Remove a book from the database
         """
+
+        check_borrowed_query = """
+        SELECT is_borrowed FROM Books
+        WHERE id = %s
+        """
+
+        result = self.db.select(check_borrowed_query, (book_id,))
+
+        logging.info(f"Result: {result}")
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Book not found")
+
+        is_borrowed = result[0]["is_borrowed"]
+        if is_borrowed:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot remove book as it has been borrowed",
+            )
 
         query = """
         DELETE FROM Books
