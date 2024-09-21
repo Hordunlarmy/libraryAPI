@@ -6,7 +6,7 @@ book_router = APIRouter(prefix="/api/books")
 book_manager = BookManager()
 
 
-@book_router.post("/add")
+@book_router.post("/add", status_code=201)
 async def add_book(book_data: BookCreateSchema):
     """
     Add a new book to the database
