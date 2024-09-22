@@ -3,7 +3,6 @@ from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from main import app
 from modules.book.manager import BookManager
 from shared.error_handler import CustomError

@@ -1,6 +1,0 @@
-
-ERROR:   2024-09-21 13:52:04,743  (__devcommit__) ==  No staged changes found. Stage your changes manually, or automatically stage all changes with the `--stageAll` flag.[46]
-
-ERROR:   2024-09-22 15:06:46,370  (__gemini_ai__) ==  Error generating commit message: 504 Deadline Exceeded[66]
-
-ERROR:   2024-09-22 15:45:17,529  (__gemini_ai__) ==  Error generating commit message: 504 Deadline Exceeded[66]
