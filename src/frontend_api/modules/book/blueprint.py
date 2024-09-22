@@ -1,7 +1,6 @@
 from flask import Blueprint, request
 from modules.book.manager import BookManager
 from modules.book.schemas import BorrowedBookSchema, ReturnedBookSchema
-from shared.error_handler import error_handler
 from shared.logger import logging  # noqa
 
 book_manager = BookManager()
@@ -9,7 +8,6 @@ book_blueprint = Blueprint("book", __name__)
 
 
 @book_blueprint.route("/available", strict_slashes=False)
-@error_handler()
 def available():
     """
     Get all available books
@@ -28,21 +26,23 @@ def get_book(book_id):
 
 
 @book_blueprint.route("/borrow", methods=["POST"], strict_slashes=False)
-@error_handler(BorrowedBookSchema)
-def borrow_book(borrow_data):
+def borrow_book():
     """
     Borrow a book
     """
+
+    borrow_data = BorrowedBookSchema(**request.json)
 
     return book_manager.borrow_book(borrow_data)
 
 
 @book_blueprint.route("/return", methods=["POST"], strict_slashes=False)
-@error_handler(ReturnedBookSchema)
-def return_book(data):
+def return_book():
     """
     Return a book
     """
+
+    data = ReturnedBookSchema(**request.json)
 
     return book_manager.return_book(data)
 

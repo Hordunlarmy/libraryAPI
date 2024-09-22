@@ -5,6 +5,7 @@ from decouple import config
 from flask import jsonify
 from shared.broker import SyncManager
 from shared.database import db as frontend_db
+from shared.error_handler import CustomError
 from shared.logger import logging
 from shared.utils import generate_uuid
 
@@ -39,24 +40,26 @@ class BookManager:
 
                 try:
                     self.db.Books.insert_one(book_data)
+                    return (
+                        jsonify({"message": "Book synced successfully"}),
+                        200,
+                    )
                 except Exception as e:
                     logging.error(f"Error syncing book(add): {e}")
-                    return jsonify({"error": "Error syncing book(add)"}), 500
+                    raise CustomError("Error syncing book(add)", 500)
 
-                return jsonify({"message": "Book synced successfully"}), 200
             elif book_data.get("action") == "remove_book":
                 book_id = book_data.get("book_id")
 
                 try:
                     self.db.Books.delete_one({"_id": book_id})
+                    return (
+                        jsonify({"message": "Book removed successfully"}),
+                        200,
+                    )
                 except Exception as e:
                     logging.error(f"Error syncing book(remove): {e}")
-                    return (
-                        jsonify({"error": "Error syncing book(remove)"}),
-                        500,
-                    )
-
-                return jsonify({"message": "Book removed successfully"}), 200
+                    raise CustomError("Error syncing book(remove)", 500)
 
     def list_all_available_books(self):
         """
@@ -80,7 +83,7 @@ class BookManager:
 
         if not book:
             logging.error("Book not found")
-            return jsonify({"error": "Book not found"}), 404
+            raise CustomError("Book not found", 404)
 
         book["_id"] = str(book["_id"])
 
@@ -108,7 +111,7 @@ class BookManager:
             self.db.BorrowedBooks.insert_one(borrow_data)
         except Exception as e:
             logging.error(f"Error borrowing book: {e}")
-            return jsonify({"error": "Error borrowing book"}), 500
+            raise CustomError("Error borrowing book", 500)
 
         try:
             borrow_data["action"] = "borrow_book"
@@ -116,10 +119,13 @@ class BookManager:
             borrow_data["return_date"] = borrow_data["return_date"].isoformat()
             borrow_data_json = json.dumps(borrow_data)
             broker.publish(borrow_data_json, self.pub_queue)
-        except Exception as e:
-            logging.error(f"Error publishing borrow data to RabbitMQ: {e}")
 
-            # Rollback database operation if message publishing fails
+            return (
+                jsonify({"message": "Book borrowed successfully"}),
+                200,
+            )
+        except Exception as e:
+            logging.error(f"Error publishing borrow book data: {e}")
             try:
                 self.db.Books.update_one(
                     {"_id": borrow_data.get("book_id")},
@@ -127,15 +133,9 @@ class BookManager:
                 )
                 self.db.BorrowedBooks.delete_one({"_id": borrow_data["_id"]})
                 logging.info("Rollback completed successfully.")
-                raise Exception("Broker connection error. Try again.")
             except Exception as rollback_error:
                 logging.error(f"Error during rollback: {rollback_error}")
-                return (jsonify({"error": "Rollback failed"}), 500)
-            return (jsonify({"error": "Database rollback performed."}), 500)
-        return (
-            jsonify({"message": "Book borrowed and published successfully"}),
-            200,
-        )
+            raise CustomError("Failed to borrow book. Try again.", 500)
 
     def return_book(self, data):
         """
@@ -152,12 +152,14 @@ class BookManager:
             self.db.BorrowedBooks.delete_one({"book_id": book_id})
         except Exception as e:
             logging.error(f"Error returning book: {e}")
-            return jsonify({"error": "Error returning book"}), 500
+            raise CustomError("Error returning book", 500)
 
         try:
             return_data = {"book_id": book_id, "action": "return_book"}
             return_data_json = json.dumps(return_data)
             broker.publish(return_data_json, self.pub_queue)
+
+            return jsonify({"message": "Book returned successfully"}), 200
         except Exception as e:
             logging.error(f"Error returning book: {e}")
             try:
@@ -166,12 +168,9 @@ class BookManager:
                 )
                 self.db.BorrowedBooks.insert_one(return_data)
                 logging.info("Rollback completed successfully.")
-                raise Exception("Broker connection error. Try again.")
             except Exception as rollback_error:
                 logging.error(f"Error during rollback: {rollback_error}")
-                return (jsonify({"error": "Rollback failed"}), 500)
-            return (jsonify({"error": "Database rollback performed."}), 500)
-        return jsonify({"message": "Book returned successfully"}), 200
+            raise CustomError("Failed to return book. Try again.", 500)
 
     def filter_books(self, publishers=None, categories=None):
         """

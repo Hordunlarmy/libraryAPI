@@ -23,7 +23,7 @@ repos:
 
       - id: pytest
         name: pytest
-        entry: poetry run pytest
+        entry: bash -c "PYTHONPATH=src/frontend_api/ poetry run pytest"
         language: system
         types: [python]
         pass_filenames: false

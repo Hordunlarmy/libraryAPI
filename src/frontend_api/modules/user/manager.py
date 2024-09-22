@@ -6,6 +6,7 @@ from modules.user.schemas import UserSchema
 from pymongo.errors import DuplicateKeyError
 from shared.broker import SyncManager
 from shared.database import db as frontend_db
+from shared.error_handler import CustomError
 from shared.logger import logging
 from shared.utils import generate_uuid
 
@@ -44,14 +45,11 @@ class UserManager:
 
         except DuplicateKeyError as e:
             logging.error(f"Duplicate key error: {e}")
-            return (
-                jsonify({"error": "User with this email already exists"}),
-                409,
-            )
+            raise CustomError("User already exists", 400) from e
 
         except Exception as e:
             logging.error(f"Error enrolling user: {e}")
-            return jsonify({"error": "Error enrolling user"}), 500
+            raise CustomError("Error enrolling user", 500) from e
 
         try:
             user_data["action"] = "enroll_user"
@@ -62,14 +60,13 @@ class UserManager:
                 f"User data published to broker queue {self.pub_queue}."
             )
 
+            return jsonify({"user_id": str(user_id)}), 201
+
         except Exception as e:
             logging.error(f"Error publishing user data to broker: {e}")
             try:
                 self.db.Users.delete_one({"_id": user_id})
                 logging.info(f"Rolled back user {user_id} from database.")
-                raise Exception("Broker connection error. Try again")
             except Exception as rollback_error:
                 logging.error(f"Error during rollback: {rollback_error}")
-                return (jsonify({"error": "Rollback failed"}), 500)
-            return (jsonify({"error": "Rollback performed"}), 500)
-        return jsonify({"user_id": str(user_id)}), 201
+            raise CustomError("User enrollment failed. Try again.", 500) from e

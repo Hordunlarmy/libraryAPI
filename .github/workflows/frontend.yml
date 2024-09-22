@@ -52,5 +52,5 @@ jobs:
       - name: Checks written tests
         run: |
           cd src/frontend_api
-          poetry run pytest
+          PYTHONPATH=. poetry run pytest
 

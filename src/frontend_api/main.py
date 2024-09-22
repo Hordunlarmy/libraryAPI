@@ -1,13 +1,41 @@
 import threading
 
 from decouple import config
-from flask import Flask
+from flask import Flask, jsonify
 from modules.book.blueprint import book_blueprint
 from modules.user.blueprint import user_blueprint
+from pydantic import ValidationError
 from shared.broker import SyncManager
+from shared.error_handler import CustomError
 from shared.logger import logging
 
 app = Flask(__name__)
+
+
+@app.errorhandler(CustomError)
+def handle_custom_error(error):
+    response = jsonify({"error": error.message})
+    response.status_code = error.http_status_code
+    return response
+
+
+@app.errorhandler(ValidationError)
+def handle_validation_error(error):
+    """
+    Handle validation errors
+    """
+
+    first_error = error.errors()[0]
+    error_msg = first_error.get("msg")
+    error_loc = first_error.get("loc")
+
+    response = jsonify(
+        {
+            "error": f"{error_msg} : {error_loc}",
+        }
+    )
+    response.status_code = 400  # Bad Request
+    return response
 
 
 @app.route("/")
@@ -20,7 +48,7 @@ app.register_blueprint(book_blueprint, url_prefix="/api/books")
 
 
 consumer_started = False
-sync_manager = SyncManager()  # Keep a global instance of SyncManager
+sync_manager = SyncManager()
 
 
 @app.before_request
