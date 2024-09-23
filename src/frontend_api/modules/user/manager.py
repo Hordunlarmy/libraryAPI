@@ -45,7 +45,7 @@ class UserManager:
 
         except DuplicateKeyError as e:
             logging.error(f"Duplicate key error: {e}")
-            raise CustomError("User already exists", 400) from e
+            raise CustomError("User already exists", 409) from e
 
         except Exception as e:
             logging.error(f"Error enrolling user: {e}")

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, constr, validator
+from shared.error_handler import CustomError
 
 
 class BookCreateSchema(BaseModel):
@@ -10,46 +11,32 @@ class BookCreateSchema(BaseModel):
     publisher: constr(min_length=1)
 
     @validator("title")
-    def title_must_not_contain_special_chars(cls, v):
-        if not v.isalnum():
-            raise ValueError(
-                "Title must contain only alphanumeric characters."
-            )
+    def title_must_be_string_and_not_empty(cls, v):
+        if not isinstance(v, str) or not v:
+            raise CustomError("Title must be a non-empty string.", 400)
         return v
 
     @validator("author")
-    def author_must_not_contain_special_chars(cls, v):
-        if not v.isalnum():
-            raise ValueError(
-                "Author must contain only alphanumeric characters."
-            )
+    def author_must_be_string_and_not_empty(cls, v):
+        if not isinstance(v, str) or not v:
+            raise CustomError("Author must be a non-empty string.", 400)
         return v
 
     @validator("category")
-    def category_must_not_contain_special_chars(cls, v):
-        if not v.isalnum():
-            raise ValueError(
-                "Category must contain only alphanumeric characters."
-            )
+    def category_must_be_string_and_not_empty(cls, v):
+        if not isinstance(v, str) or not v:
+            raise CustomError("Category must be a non-empty string.", 400)
         return v
 
     @validator("publisher")
-    def publisher_must_not_contain_special_chars(cls, v):
-        if not v.isalnum():
-            raise ValueError(
-                "Publisher must contain only alphanumeric characters."
-            )
+    def publisher_must_be_string_and_not_empty(cls, v):
+        if not isinstance(v, str) or not v:
+            raise CustomError("Publisher must be a non-empty string.", 400)
         return v
 
 
 class BookSchema(BookCreateSchema):
     id: str
-
-    @validator("id")
-    def id_must_be_uuid(cls, v):
-        if not v.isalnum():
-            raise ValueError("ID must be a valid UUID.")
-        return v
 
 
 class UnavailableBook(BaseModel):

@@ -83,7 +83,7 @@ def test_enroll_user_duplicate_key_error(user_manager, user_data, mock_db):
         with pytest.raises(CustomError) as exc_info:
             user_manager.enroll_user(user_data)
 
-        assert exc_info.value.http_status_code == 400
+        assert exc_info.value.http_status_code == 409
         assert str(exc_info.value.message) == "User already exists"
 
         mock_db.Users.insert_one.assert_called_once()
