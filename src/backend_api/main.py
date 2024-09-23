@@ -1,10 +1,13 @@
 import threading
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from modules.book.router import book_router
 from modules.user.router import user_router
 from shared.broker import SyncManager
+from shared.error_handler import CustomError
 from shared.logger import logging
 from shared.utils import callback
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -18,6 +21,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(CustomError)
+async def custom_error_handler(request: Request, exc: CustomError):
+    return JSONResponse(
+        status_code=exc.http_status_code,
+        content={"error": exc.message},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def handle_validation_error(request, exc):
+    """
+    Handle validation errors
+    """
+
+    first_error = exc.errors()[0]
+    error_msg = first_error.get("msg")
+    error_loc = first_error.get("loc")
+
+    return JSONResponse(
+        status_code=422,
+        content={"error": error_msg + " : " + error_loc[1]},
+    )
 
 
 class RabbitMQMiddleware(BaseHTTPMiddleware):

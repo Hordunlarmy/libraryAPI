@@ -2,14 +2,7 @@ from contextlib import contextmanager
 
 from decouple import config
 from mysql.connector import Error, connect
-
-
-class DatabaseError(Exception):
-    """Custom exception for database errors."""
-
-    def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+from shared.error_handler import CustomError
 
 
 class Database:
@@ -53,7 +46,8 @@ class Database:
                 connection.commit()
                 return cursor.lastrowid
             except Error as e:
-                raise DatabaseError(f"{e}")
+                connection.rollback()
+                raise CustomError(f"{e}", 500)
 
     def select(self, query, params=None, format=True):
         with self._get_connection() as connection:
@@ -71,7 +65,7 @@ class Database:
                 else:
                     return (col_names, records)
             except Error as e:
-                raise DatabaseError(f"{e}")
+                raise CustomError(f"{e}", 500)
 
 
 db = Database(

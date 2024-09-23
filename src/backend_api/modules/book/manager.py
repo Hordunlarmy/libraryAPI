@@ -1,11 +1,12 @@
 import json
 from datetime import datetime
 
+import mysql.connector
 from decouple import config
-from fastapi import HTTPException
 from modules.book.schemas import BookCreateSchema, UnavailableBook
 from shared.broker import SyncManager
 from shared.database import Database, db
+from shared.error_handler import CustomError
 from shared.logger import logging
 from shared.utils import generate_uuid
 
@@ -43,9 +44,18 @@ class BookManager:
 
         try:
             self.db.commit(query, params)
+        except mysql.connector.Error as e:
+            logging.error(f"MySQL error: {e}")
+            raise CustomError(
+                "A MySQL error occurred while adding the book.", 500
+            )
         except Exception as e:
-            logging.error(f"Error adding book: {e}")
-            return HTTPException(status_code=500, detail="Error adding book")
+            if "Duplicate entry" in str(e):
+                raise CustomError(
+                    "A book with this title already exists.", 409
+                )
+            logging.error(f"Unexpected error adding book: {e}")
+            raise CustomError("An error occurred while adding the book.", 500)
 
         try:
             book_data_dict = book_data.dict()
@@ -53,6 +63,9 @@ class BookManager:
             book_data_dict["action"] = "add_book"
             message = json.dumps(book_data_dict).encode("utf-8")
             broker.publish(message, self.pub_queue)
+            logging.info("Book data published successfully")
+
+            return {"book_id": book_id}
         except Exception as e:
             logging.error(f"Error publishing book data: {e}")
             try:
@@ -63,17 +76,11 @@ class BookManager:
                 rollback_params = (book_id,)
                 self.db.commit(rollback_query, rollback_params)
                 logging.info("Rolled back book insertion successfully.")
-                raise HTTPException(
-                    status_code=500,
-                    detail="Broker connection error. Try again",
-                )
             except Exception as rollback_error:
                 logging.error(f"Error during rollback: {rollback_error}")
-                raise HTTPException(status_code=500, detail="Rollback failed")
-
-            raise HTTPException(status_code=500, detail="Rollback performed")
-
-        return {"book_id": book_id}
+            raise CustomError(
+                "Broker connection error. Try adding the book again.", 500
+            )
 
     async def remove_book(self, book_id: str):
         """
@@ -90,14 +97,11 @@ class BookManager:
         logging.info(f"Result: {result}")
 
         if not result:
-            raise HTTPException(status_code=404, detail="Book not found")
+            raise CustomError("Book not found", 404)
 
         is_borrowed = result[0]["is_borrowed"]
         if is_borrowed:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot remove book as it has been borrowed",
-            )
+            raise CustomError("Book is currently borrowed", 409)
 
         query = """
         DELETE FROM Books
@@ -110,12 +114,18 @@ class BookManager:
             self.db.commit(query, params)
         except Exception as e:
             logging.error(f"Error removing book: {e}")
-            raise HTTPException(status_code=500, detail="Error removing book")
+            raise CustomError(
+                "An error occurred while removing the book.", 500
+            )
 
         try:
             book_data = {"book_id": book_id, "action": "remove_book"}
             book_data = json.dumps(book_data).encode("utf-8")
             broker.publish(book_data, self.pub_queue)
+            logging.info("Book data published successfully")
+
+            return {"message": "Book removed successfully"}
+
         except Exception as e:
             logging.error(f"Error publishing book data: {e}")
 
@@ -127,17 +137,11 @@ class BookManager:
                 rollback_params = (book_id,)
                 self.db.commit(rollback_query, rollback_params)
                 logging.info("Rolled back book removal successfully.")
-                raise HTTPException(
-                    status_code=500,
-                    detail="Broker connection error. Try again",
-                )
             except Exception as rollback_error:
                 logging.error(f"Error during rollback: {rollback_error}")
-                raise HTTPException(status_code=500, detail="Rollback failed")
-
-            raise HTTPException(status_code=500, detail="Rollback performed")
-
-        return {"message": "Book removed successfully"}
+            raise CustomError(
+                "Broker connection error. Try removing the book again.", 500
+            )
 
     def sync_borrowed_book(self, book_data):
         """
@@ -168,10 +172,13 @@ class BookManager:
             self.db.commit(borrowed_query, params)
             self.db.commit(book_query, (book_data.get("book_id"),))
 
-            return {"message": "Borrowed book synced successfully"}
+            logging.info("Borrowed book synced successfully")
+
         except Exception as e:
             logging.error(f"Error syncing borrowed book: {e}")
-            return {"error": f"Error syncing borrowed book: {str(e)}"}, 500
+            raise CustomError(
+                "An error occurred while syncing borrowed book data.", 500
+            )
 
     def sync_returned_book(self, book_data):
         """
@@ -193,10 +200,13 @@ class BookManager:
             self.db.commit(book_query, (book_data.get("book_id"),))
             self.db.commit(borrowed_query, (book_data.get("book_id"),))
 
-            return {"message": "Returned book synced successfully"}
+            logging.info("Returned book synced successfully")
+
         except Exception as e:
             logging.error(f"Error syncing returned book: {e}")
-            return {"error": f"Error syncing returned book: {str(e)}"}, 500
+            raise CustomError(
+                "An error occurred while syncing returned book data.", 500
+            )
 
     async def get_unavailable_books(self) -> list[UnavailableBook]:
         """
