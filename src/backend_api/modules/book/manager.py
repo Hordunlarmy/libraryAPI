@@ -52,7 +52,7 @@ class BookManager:
         except Exception as e:
             if "Duplicate entry" in str(e):
                 raise CustomError(
-                    "A book with this title already exists.", 409
+                    "A book with this title and author already exists.", 409
                 )
             logging.error(f"Unexpected error adding book: {e}")
             raise CustomError("An error occurred while adding the book.", 500)
